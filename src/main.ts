@@ -3,8 +3,16 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const cookieSession = require('cookie-session');
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.use(
+    cookieSession({
+      keys: ['asdasdasd'],
+    }),
+  );
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -21,3 +29,5 @@ async function bootstrap() {
   await app.listen(3000);
 }
 bootstrap();
+
+// NEXT 80
