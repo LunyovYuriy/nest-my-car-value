@@ -2,7 +2,8 @@ import { Test } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { UsersService } from './users.service';
 import { User } from './user.entity';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { NotFoundError } from 'rxjs';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -46,12 +47,18 @@ describe('AuthService', () => {
     expect(hash).toBeDefined();
   });
 
-  it('throws an error if user signs up with email that is in use', async () => {
+  it('throws an error if user signs up with email that is already in use', async () => {
     fakeUserService.find = () =>
       Promise.resolve([{ id: 1, email: 'a', password: '1' } as User]);
 
     await expect(
       service.signup('justanemail@mail.com', 'justapassword'),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('throws an error if sign-in is called with an not existed user email', async () => {
+    await expect(
+      service.signin('justanemail1@mail.com', 'justapassword'),
+    ).rejects.toThrow(NotFoundException);
   });
 });
