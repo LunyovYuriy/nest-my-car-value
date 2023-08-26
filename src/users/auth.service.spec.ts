@@ -3,21 +3,29 @@ import { AuthService } from './auth.service';
 import { UsersService } from './users.service';
 import { User } from './user.entity';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { NotFoundError } from 'rxjs';
 
 describe('AuthService', () => {
   let service: AuthService;
   let fakeUserService: Partial<UsersService>;
 
   beforeEach(async () => {
+    const users: User[] = [];
     fakeUserService = {
-      find: () => Promise.resolve([]),
-      create: (email: string, password: string) =>
-        Promise.resolve({
-          id: 1,
+      find: (email: string) => {
+        const filteredUsers = users.filter((user) => user.email === email);
+
+        return Promise.resolve(filteredUsers);
+      },
+      create: (email: string, password: string) => {
+        const user = {
+          id: Math.floor(Math.random() * 99999),
           email,
           password,
-        } as User),
+        } as User;
+        users.push(user);
+
+        return Promise.resolve(user);
+      },
     };
 
     const module = await Test.createTestingModule({
@@ -48,11 +56,10 @@ describe('AuthService', () => {
   });
 
   it('throws an error if user signs up with email that is already in use', async () => {
-    fakeUserService.find = () =>
-      Promise.resolve([{ id: 1, email: 'a', password: '1' } as User]);
+    await service.signup('assdad@aaa.com', 'mypassword');
 
     await expect(
-      service.signup('justanemail@mail.com', 'justapassword'),
+      service.signup('assdad@aaa.com', 'mypassword'),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -60,5 +67,20 @@ describe('AuthService', () => {
     await expect(
       service.signin('justanemail1@mail.com', 'justapassword'),
     ).rejects.toThrow(NotFoundException);
+  });
+
+  it('throws an error if invalid password is provided', async () => {
+    await service.signup('justanemail@mail.com', '112');
+
+    await expect(
+      service.signin('justanemail@mail.com', '1123'),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('returns a user if correct password is provided', async () => {
+    await service.signup('assdad@aaa.com', 'mypassword');
+
+    const user = await service.signin('assdad@aaa.com', 'mypassword');
+    expect(user).toBeDefined();
   });
 });
